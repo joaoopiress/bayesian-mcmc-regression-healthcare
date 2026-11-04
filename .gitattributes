@@ -1,0 +1,2 @@
+# Exclude the LaTeX report source from GitHub language stats
+report/** linguist-documentation
