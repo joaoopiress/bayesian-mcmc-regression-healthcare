@@ -1,0 +1,29 @@
+\section{The Bayesian Generalized Linear Model}
+Given that the response variable $y_i$ (GHB) is continuous, strictly positive, and right-skewed, we assume that the observations $y_i$ are independently distributed according to a Gamma distribution \cite{silva2023notes}. The model is parameterized in terms of the mean $\mu_i$ and a shape parameter $r$. The probability density function is defined as: 
+
+\begin{equation*}	
+	y_i \sim \text{Gamma}(r, \lambda_i).
+\end{equation*}
+
+Where the rate parameter is $\lambda_i = r / \mu_i$, such that $E[y_i] = \mu_i$ and $Var(y_i) = \mu_i^2 / r$. To map the linear predictor to the positive mean $\mu_i$, we employ the Log-Link function: 
+
+\begin{equation*}	
+	\log(\mu_i) = \eta_i.
+\end{equation*}
+
+Based on the variable selection performed in the EDA section (variables with correlation $c \ge 0.20$), the linear predictor $\eta_i$ for subject $i$ is defined as:
+\begin{equation*}
+	\eta_i = \beta_0 + \beta_{SGLU} \cdot \text{SGLU}_i + \beta_{AGE} \cdot \text{AGE}_i + \beta_{CHOL} \cdot \text{CHOL}_i + \beta_{WAIST} \cdot \text{WAIST}_i + \beta_{SBP} \cdot \text{SBP}_i.
+\end{equation*}
+
+Where $\beta_0$ represents the intercept and $\beta_k$ represents the regression coefficient for each predictor. Following the Bayesian framework, we must specify prior distributions for all unknown parameters. Since no strong prior information was available for this specific population, we adopted vague (non-informative) priors to allow the data to dominate the posterior distribution \cite{gelman2013}. We assigned Normal priors with mean 0 and low precision ($\tau=0.001$, implying a variance of $\sigma^2 = 1000$) to represent our initial uncertainty: 
+$$\beta_k \sim N(\mu=0, \tau=0.001), \quad \text{for } k = 0, ..., 5.$$ 
+For the shape parameter of the Gamma distribution, we assigned a wide Uniform distribution restricted to positive values: 
+$$r \sim \text{Uniform}(0, 100).$$ The posterior distributions were estimated using Markov Chain Monte Carlo (MCMC) sampling implemented in JAGS (Just Another Gibbs Sampler) \cite{plummer200}, interfaced via the rjags package. We configured the simulation with the following parameters:
+\begin{itemize}
+	\item Number of Chains: 3;
+	\item Total Iterations per Chain: 7000;
+	\item Burn-in Period: 2000 iterations;
+	\item Effective Sample Size: 5000 samples per chain, and Thinning: 1.  
+\end{itemize}
+Convergence was assessed visually using Trace Plots and formally using the Gelman-Rubin diagnostic ($\hat{R}$) \cite{silva2023notes}. The parameters were selected to balance computational efficiency with the precision of posterior estimations.

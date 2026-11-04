@@ -1,0 +1,31 @@
+\section{Innovation and Validation (Bootstrap)}
+
+To assess the robustness of the Bayesian findings and the choice of predictors, we implemented a validation step using a frequentist approach \cite{silva2023notes}. A Generalized Linear Model (GLM) assuming a Gamma distribution with a Log link function was fitted to the data. To account for sampling variability and validate the stability of the coefficients, we applied the Non-parametric Bootstrap method with $B=1000$ replications. This specific approach was chosen to explicitly test the model under two distinct paradigms: the Frequentist versus the Bayesian. Table (3) presents the bootstrap estimates, standard errors, and the 95\% percentile confidence intervals for the primary predictors.
+
+\begin{table}[ht]
+	\centering
+	\label{tab:bootstrap}
+	\begin{tabular}{lcccc}
+		\toprule
+		\textbf{Parameter} & \textbf{Original (GLM)} & \textbf{Bias} & \textbf{Std. Error} & \textbf{95\% Bootstrap CI} \\
+		\midrule
+		Intercept       & 0.7619 & 0.0024 & 0.0887 & $(0.5881, 0.9357)^*$ \\
+		SGLU            & 0.0038 & 0.0000 & 0.0003 & $(0.0032, 0.0045)$ \\
+		Age             & 0.0033 & 0.0001 & 0.0010 & $(0.0014, 0.0053)$ \\
+		Cholesterol     & 0.0008 & 0.0000 & 0.0003 & $(0.0002, 0.0014)^*$ \\
+		Waist Circumf.  & 0.0047 & 0.0000 & 0.0020 & $(0.0008, 0.0086)^*$ \\
+		Systolic BP     & 0.0002 & 0.0000 & 0.0005 & $(-0.0008, 0.0012)^*$ \\
+		\bottomrule
+		\multicolumn{5}{l}{\footnotesize *Approximated based on Normal theory for secondary parameters; SGLU and Age are Percentile CIs.}
+	\end{tabular}
+	\caption{Bootstrap Validation Results (1000 replicates) for the Gamma GLM.}
+\end{table}
+
+\subsection{Comparison of Metric Frameworks}
+
+The frequentist model has an Akaike Information Criterion (AIC) of 1147.09. This metric serves as a parallel to the Bayesian Deviance Information Criterion (DIC) used in the JAGS model selection \cite{spiegelhalter2002}. The validation results highlight two key conclusions:
+\begin{itemize}
+	\item \textbf{Parameter Consistency:} The bootstrap estimates for Stabilized Glucose ($\beta \approx 0.0038$) and Age ($\beta \approx 0.0033$) are virtually identical to the posterior means obtained from the Bayesian MCMC analysis.
+	\item \textbf{Insignificance Confirmation:} The Systolic Blood Pressure (SBP) presents a standard error ($0.0005$) larger than its coefficient ($0.0002$), and its confidence interval crosses zero. This mirrors the Bayesian Credible Interval, confirming that SBP is not a significant linear predictor in this context.
+\end{itemize}
+In conclusion, the convergence between the data-driven Bootstrap approach and the prior-driven Bayesian approach provides strong evidence that the selected reduced model is robust and not an artifact of a specific statistical methodology.

@@ -1,0 +1,325 @@
+\newpage
+\pagestyle{empty}
+\appendix
+\section*{B. R Code and Implementation Details}
+\label{app:rcode}
+\subsection*{Data Import and Pre-processing}
+
+The code starts by importing the data using the \emph{read.table} function combined with \emph{file.choose()}, which opens a window for selecting the raw file. After reading, temporary names are assigned to the columns to allow for initial manipulation, given that the original text file lacks headers.
+
+Using the \emph{tidyverse} library, a clean and structured dataset is then created, where variables are converted to their correct types, for example, numeric for clinical measures like stabilized glucose (SGLU) and factors for categories like gender (GENDER). Simultaneously, columns are renamed with standardized uppercase acronyms (e.g., glyhb to GHB) to ensure exact correspondence with the variable table provided in the project prompt. The process concludes with the removal of any lines containing missing data via the \emph{na.omit} function. This step is crucial to comply with the report's note regarding "NA" observations (empty cells), ensuring the final database is free of gaps that could cause errors in subsequent statistical calculations, specifically in the MCMC simulations.
+
+\begin{lstlisting}[language=R, caption={Data Import and Cleaning.}]
+	library(tidyverse)
+	
+	# Note: file.choose() opens a dialog to select the dataset
+	dados <- read.table(file.choose(), header = FALSE, fill = TRUE)
+	# Replace file.choose() with the direct path if needed
+	
+	# Temporary column names
+	colnames(dados) <- c("id", "chol", "stab.glu", "hdl", "glyhb", "location", 
+	"age", "gender", "height", "weight", "frame", 
+	"bp.1s", "bp.1d", "waist", "hip")
+	
+	# Final cleaning and type conversion
+	dados_final <- dados %>%
+	mutate(
+	ID = as.character(id),
+	GHB = as.numeric(glyhb),        
+	SGLU = as.numeric(stab.glu),    
+	CHOL = as.numeric(chol),        
+	HDL = as.numeric(hdl),          
+	AGE = as.numeric(age),          
+	GENDER = as.factor(gender),     
+	LOCATION = as.factor(location), 
+	HHT = as.numeric(height),       
+	WHT = as.numeric(weight),       
+	FRAME = as.factor(frame),       
+	SBP = as.numeric(bp.1s),        
+	DSP = as.numeric(bp.1d),        
+	WAIST = as.numeric(waist),      
+	HIP = as.numeric(hip)          
+	) %>%
+	select(ID, GHB, SGLU, CHOL, HDL, AGE, GENDER, LOCATION, 
+	HHT, WHT, FRAME, SBP, DSP, WAIST, HIP) %>%
+	na.omit()
+	
+	print(paste("Total complete observations:", nrow(dados_final)))
+	print(head(dados_final))
+\end{lstlisting}
+
+\subsection*{Validation of the Gamma Hypothesis (Exploratory Analysis)}
+
+This phase directly addresses the prompt's suggestion that a Gamma distribution or another positive variable distribution might be appropriate for the model. To validate this hypothesis prior to mathematical modeling, a histogram of the GHB variable (Glycosolated Hemoglobin) is created, superimposing a red density curve over it. Furthermore, the code generates scatterplots to preliminarily explore the relationship between stabilized glucose (SGLU) and hemoglobin, fulfilling the study's objective of investigating the positive linear association between risk factors and the diabetes diagnosis.
+
+\begin{lstlisting}[language=R, caption={Visual Inspection: Histograms and Scatterplots.}]
+	library(ggplot2)
+	
+	# Histogram with Density
+	p1 <- ggplot(dados_final, aes(x = GHB)) +
+	geom_histogram(aes(y = ..density..), bins = 30, fill = "#69b3a2", color = "black", alpha = 0.7) +
+	geom_density(color = "red", lwd = 1.2) +
+	labs(
+	title = "Distribution of Glycosolated Hemoglobin (GHB)",
+	subtitle = "Right-skewness supports the choice of a Gamma Model",
+	x = "Glycosolated Hemoglobin (GHB)", y = "Density"
+	) + theme_minimal()
+	
+	# Scatterplot GHB vs SGLU with Gamma fit
+	p2 <- ggplot(dados_final, aes(x = SGLU, y = GHB, color = GENDER)) +
+	geom_point(alpha = 0.6, size = 2) + 
+	geom_smooth(method = "glm", method.args = list(family = Gamma(link="log")), se = FALSE, lwd = 1.5) +
+	labs(
+	title = "Relationship: GHB vs. SGLU",
+	subtitle = "Positive correlation observed with Gamma fit",
+	x = "Stabilized Glucose (SGLU)", y = "Glycosolated Hemoglobin (GHB)",
+	color = "Gender" 
+	) + theme_minimal()
+	
+	# Saving plots for report
+	ggsave("histogram_ghb.png", plot = p1, width = 8, height = 4, dpi = 300) 
+	ggsave("scatterplot_glucose.png", plot = p2, width = 8, height = 6, dpi = 300)
+\end{lstlisting}
+\vspace*{1.5em}
+
+\subsection*{Selection of Risk Factors (Correlations)}
+
+The central objective of the study is to investigate the relationship between GHB and the set of associated risk factors. To determine which of the 14 variables listed in the PDF are statistically relevant and to avoid redundancy in the model, a detailed correlation analysis is performed using custom visual matrices. The script allows for the identification of collinearity between anthropometric variables (such as weight, waist, and hip) and the selection of a subset of "key" variables (Glucose, Age, Cholesterol, Waist, and Blood Pressure). This step ensures that the MCMC model focuses only on predictors that have a strong linear association with the response variable, avoiding the noise of redundant variables.
+
+\begin{lstlisting}[language=R, caption={Correlation Matrix Generation.}]
+	vars_to_plot <- dados_final %>%
+	select(GHB, SGLU, AGE, CHOL, WAIST)
+	
+	panel.cor_large <- function(x, y, digits = 2, prefix = "", cex.cor, ...) {
+		usr <- par("usr"); on.exit(par(usr))
+		par(usr = c(0, 1, 0, 1))
+		r <- abs(cor(x, y, use="complete.obs"))
+		txt <- format(c(r, 0.123456789), digits = digits)[1]
+		txt <- paste0(prefix, txt)
+		
+		
+		final_cex <- 2 + (r * 1.5) 
+		
+		text(0.5, 0.5, txt, cex = final_cex, font = 2) 
+	}
+	
+	panel.hist <- function(x, ...) {
+		usr <- par("usr"); on.exit(par(usr))
+		par(usr = c(usr[1:2], 0, 1.5) )
+		h <- hist(x, plot = FALSE)
+		breaks <- h$breaks; nB <- length(breaks)
+		y <- h$counts; y <- y/max(y)
+		rect(breaks[-nB], 0, breaks[-1], y, col = "#69b3a2", border="white")
+	}
+	
+	panel.dots <- function(x, y, ...) {
+		points(x, y, pch = 19, col = rgb(0, 0, 1, 0.2), cex = 0.8)
+		abline(lm(y~x), col="red", lwd=1.5)
+	}
+	
+	
+	png("correlation_matrix_final_large.png", width = 1200, height = 1000, res = 150)
+	
+	pairs(vars_to_plot, 
+	lower.panel = panel.dots,    
+	upper.panel = panel.cor_large, 
+	diag.panel = panel.hist,    
+	main = "Correlation Matrix of Key Variables",
+	cex.main = 1.5, 
+	gap = 0.5)      
+	
+	dev.off()
+	
+	pairs(vars_to_plot, 
+	lower.panel = panel.dots, 
+	upper.panel = panel.cor_large, 
+	diag.panel = panel.hist,
+	main = "Correlation Matrix of Key Variables")
+	
+	while (!is.null(dev.list())) dev.off()
+	
+	vars_all_numeric <- dados_final %>%
+	select(GHB, SGLU, CHOL, HDL, AGE, WAIST, HIP, HHT, WHT, SBP, DSP)
+	
+	panel.cor_large_full <- function(x, y, digits = 2, prefix = "", cex.cor, ...) {
+		
+		par(usr = c(0, 1, 0, 1)) 
+		
+		r <- abs(cor(x, y, use="complete.obs"))
+		txt <- format(c(r, 0.123456789), digits = digits)[1]
+		txt <- paste0(prefix, txt)
+		
+		if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
+		
+		final_cex <- 1.5 + (r * 2) 
+		
+		text(0.5, 0.5, txt, cex = final_cex, font = 2)
+	}
+	
+	panel.hist <- function(x, ...) {
+		usr <- par("usr"); on.exit(par(usr = usr)) 
+		par(usr = c(usr[1:2], 0, 1.5) )
+		h <- hist(x, plot = FALSE)
+		breaks <- h$breaks; nB <- length(breaks)
+		y <- h$counts; y <- y/max(y)
+		rect(breaks[-nB], 0, breaks[-1], y, col = "#69b3a2", border="white")
+	}
+	
+	
+	panel.dots <- function(x, y, ...) {
+		points(x, y, pch = 19, col = rgb(0, 0, 1, 0.2), cex=0.5) 
+		abline(lm(y~x), col="red", lwd=1)
+	}
+	
+	png("correlation_matrix_full_large.png", width = 2000, height = 2000, res = 200)
+	
+	pairs(vars_all_numeric, 
+	lower.panel = panel.dots, 
+	upper.panel = panel.cor_large_full, 
+	diag.panel = panel.hist,
+	main = "Full Correlation Matrix (All Numeric Variables)",
+	cex.main = 2,  
+	gap = 0)       
+	
+	dev.off() 
+\end{lstlisting}
+
+\subsection*{Analysis of Demographic Groups}
+
+Before proceeding to inference, it is investigated whether there are significant differences in the distribution of glycosolated hemoglobin between categorical groups, namely Gender and Geographical Location (Buckingham vs. Louisa). Using side-by-side boxplots (grouped via the \emph{patchwork} library), the median and data dispersion for each group are visualized. This analysis is important to decide if these categorical variables should be included as correction factors in the final model. The "\emph{tema\_grande}" (large theme) graphic style is applied to ensure that this visual comparison is legible in the final report.
+\vspace{0.2em}
+
+\begin{lstlisting}[language=R, caption={Demographic Analysis using Boxplots.}]
+	library(patchwork) 
+	
+	tema_grande <- theme_minimal() +
+	theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
+	axis.title = element_text(size = 20, face = "bold"),
+	axis.text = element_text(size = 18, color = "black"))
+	
+	p_gender <- ggplot(dados_final, aes(x = GENDER, y = GHB, fill = GENDER)) +
+	geom_boxplot(alpha = 0.7, lwd = 1, outlier.size = 3) + 
+	scale_fill_manual(values = c("female"="#E69F00", "male"="#56B4E9")) +
+	labs(title = "GHB by Gender", x = "", y = "GHB Levels") +
+	tema_grande + theme(legend.position = "none") 
+	
+	p_loc <- ggplot(dados_final, aes(x = LOCATION, y = GHB, fill = LOCATION)) +
+	geom_boxplot(alpha = 0.7, lwd = 1, outlier.size = 3) +
+	scale_fill_manual(values = c("Buckingham"="#009E73", "Louisa"="#CC79A7")) +
+	labs(title = "GHB by Location", x = "", y = "") + 
+	tema_grande + theme(legend.position = "none") 
+	
+	# Saving categorical plots
+	if(require(patchwork)) {
+		p_combined <- p_gender + p_loc
+		
+		ggsave("boxplots_categorical.png", plot = p_combined, width = 14, height = 7, dpi = 300)
+		
+	} else {
+		ggsave("boxplot_gender.png", plot = p_gender, width = 8, height = 7, dpi = 300)
+		ggsave("boxplot_location.png", plot = p_loc, width = 8, height = 7, dpi = 300)
+	}
+	print(p_gender + p_loc)
+\end{lstlisting}
+
+
+\subsection*{MCMC Modeling (The Gamma Model)}
+
+This block executes the main requirement of the practical assignment: "using MCMC methods to select a suitable Gamma model." Using the \emph{rjags} library, the code translates this requirement into a model specification where the response variable $\gamma$ (GHB) follows a \emph{dgamma} distribution, coupled with a logarithmic link function (log) to ensure strictly positive predictions, consistent with the biological nature of the data. Non-informative prior distributions (vague Normals) are then defined for the regression coefficients ($\beta$) of the selected variables, allowing the data to drive the inference. Through the simulation of three Markov chains with 5000 iterations (after burn-in), the code estimates the quantitative influence of each risk factor on the probability of a high hemoglobin reading.
+
+\begin{lstlisting}[language=R, caption={JAGS Model Specification and Execution.}]
+	library(rjags)
+	#Results may vary slightly without fixed RNG seeds for JAGS chains.
+	jags_data <- list(
+	N = nrow(dados_final), y = dados_final$GHB, sglu = dados_final$SGLU,
+	age = dados_final$AGE, chol = dados_final$CHOL,
+	waist = dados_final$WAIST, sbp = dados_final$SBP
+	)
+	
+	model_string <- "model {
+		for (i in 1:N) {
+			# Likelihood: Gamma Distribution / Log Link
+			y[i] ~ dgamma(shape, rate[i])
+			log(mu[i]) <- beta0 + beta_sglu * sglu[i] + beta_age * age[i] + 
+			beta_chol * chol[i] + beta_waist * waist[i] + beta_sbp * sbp[i]
+			rate[i] <- shape / mu[i]
+		}
+		# Priors (Vague Normal)
+		beta0 ~ dnorm(0, 0.001)
+		beta_sglu ~ dnorm(0, 0.001); beta_age ~ dnorm(0, 0.001)
+		beta_chol ~ dnorm(0, 0.001); beta_waist ~ dnorm(0, 0.001)
+		beta_sbp ~ dnorm(0, 0.001)
+		# Shape Parameter (Uniform)
+		shape ~ dunif(0, 100)
+	}"
+	
+	model <- jags.model(textConnection(model_string), data = jags_data, n.chains = 3)
+	update(model, 2000) # Burn-in
+	samples <- coda.samples(model, 
+	variable.names = c("beta0", "beta_sglu", "beta_age", 
+	"beta_chol", "beta_waist", "beta_sbp", "shape"), 
+	n.iter = 5000)
+	summary(samples) 
+	gelman.diag(samples)
+	plot(samples)
+\end{lstlisting}
+
+\subsection*{Robust Validation (Bootstrap)}
+
+To fulfill the requirement of innovation the code is not limited to Bayesian inference, introducing cross-validation via the Bootstrap method. The script resamples the data 1000 times and repeatedly fits a frequentist GLM model with the same Gamma/Log structure used in JAGS. The objective is to compare the Confidence Intervals obtained via Bootstrap with the Credible Intervals from MCMC, specifically for critical predictors like Stabilized Glucose (SGLU) and Age (AGE). The convergence between these two methods (Bayesian and Frequentist) reinforces the robustness of the selected model, allowing for a safe clinical interpretation of the results in the final report.
+
+\begin{lstlisting}[language=R, caption={Bootstrap Validation.}]
+	library(boot)
+	
+	glm_coef_function <- function(data, indices) {
+		d <- data[indices, ] 
+		fit <- glm(GHB ~ SGLU + AGE + CHOL + WAIST + SBP, 
+		family = Gamma(link = "log"), data = d)
+		return(coef(fit))
+	}
+	
+	set.seed(123) 
+	boot_results <- boot(data = dados_final, statistic = glm_coef_function, R = 1000)
+	print(boot_results)
+	
+	# Calculate CIs for main variables
+	cat("\n--- Bootstrap CI: Glucose (Index 2) ---\n")
+	boot.ci(boot_results, type = "perc", index = 2)
+	cat("\n--- Bootstrap CI: Age (Index 3) ---\n")
+	boot.ci(boot_results, type = "perc", index = 3)
+	
+	modelo_glm_final <- glm(GHB ~ SGLU + AGE + CHOL + WAIST + SBP, 
+	family = Gamma(link = "log"), 
+	data = dados_final)
+	cat("\n--- AIC do Modelo Frequentista ---\n")
+	print(AIC(modelo_glm_final))
+\end{lstlisting}
+
+\subsection*{Model Selection Criteria (DIC)}
+
+Finally, to select a model suitable for the data, the code implements a formal model comparison based on the Deviance Information Criterion (DIC). A second MCMC model is then configured and executed, which includes all 14 variables available in the dataset (including those previously discarded due to collinearity, such as height, weight, and hip), and its DIC value is calculated. By comparing this value with the DIC of the reduced model (Chapter 5), an objective metric is obtained to justify the model choice. If the reduced model presents a lower or similar DIC to the complete model, it is mathematically proven to be preferable according to the principle of parsimony, validating the final selection presented in the report.
+
+\begin{lstlisting}[language=R, caption={DIC Calculation for Full Model and Reduced Model.}]
+	# Setup data for full model (14 variables)
+	jags_data_full <- list(
+	N = nrow(dados_final), y = dados_final$GHB, sglu = dados_final$SGLU,
+	chol = dados_final$CHOL, hdl = dados_final$HDL, age = dados_final$AGE,
+	height = dados_final$HHT, weight = dados_final$WHT, sbp = dados_final$SBP,
+	dsp = dados_final$DSP, waist = dados_final$WAIST, hip = dados_final$HIP,
+	gender = as.numeric(dados_final$GENDER), location = as.numeric(dados_final$LOCATION),
+	frame = as.numeric(dados_final$FRAME)
+	)
+	
+	# (Model string for full model with 14 variables omitted for brevity) 
+	
+	model_full <- jags.model(textConnection(model_string_full), 
+	data = jags_data_full, n.chains = 3)
+	update(model_full, 2000) 
+	dic_full <- dic.samples(model_full, n.iter = 5000, type = "pD")
+	
+	# Calculate DIC for reduced model (from previous section)
+	dic_reduced <- dic.samples(model, n.iter = 5000, type = "pD")
+	print("--- DIC Comparison ---")
+	print(dic_full)
+	print(dic_reduced)
+\end{lstlisting}

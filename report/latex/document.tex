@@ -1,0 +1,183 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  Single-column LaTeX Template with IST Logo and Modular Inputs
+%  Author: João Pires
+%  Instituto Superior Técnico, Lisboa
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[12pt,a4paper]{article}
+
+% =====================================================================
+% PACKAGES
+% =====================================================================
+\usepackage[margin=1in]{geometry}     % 1 inch margins
+\usepackage{graphicx}                 % figures (for logo and plots)
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{booktabs}                 % professional tables
+\usepackage{float}                    % precise figure placement
+\usepackage{titlesec}                 % control section spacing
+\usepackage{indentfirst}              % indent first paragraph
+\usepackage{setspace}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+
+% =====================================================================
+% STYLE SETTINGS
+% =====================================================================
+\hypersetup{
+	colorlinks=true,
+	linkcolor=black,
+	citecolor=blue!60!black,
+	urlcolor=blue!70!black
+}
+
+% --- 
+%\newcommand{\sectionbreak}{\clearpage}
+% --------------------------------
+
+% section formatting
+\titleformat{\section}{\normalfont\bfseries\large}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\normalfont\bfseries\normalsize}{\thesubsection.}{0.5em}{}
+
+\titlespacing*{\section}{0pt}{1em plus .2em minus .1em}{0.5em}
+\titlespacing*{\subsection}{0pt}{0.8em plus .2em minus .1em}{0.4em}
+
+\captionsetup[subfigure]{labelfont=bf,textfont=normalfont}
+\captionsetup[figure]{labelfont=bf}
+\captionsetup[table]{labelfont=bf}
+
+
+% Header/Footer (opcional — remove se não quiseres nada no topo/rodapé)
+%\pagestyle{fancy}
+%\fancyhf{}
+%\fancyhead[L]{Revisiting K-core robustness}
+%\fancyhead[R]{João Pires — IST, 2025}
+%\fancyfoot[C]{\thepage}
+
+% =====================================================================
+% TITLE BLOCK
+% =====================================================================
+\title{
+	\vspace{-2.5cm} % move logo e título para cima
+	\includegraphics[width=3.5cm]{Figures/logo_ist.png}\\[0.5cm]
+	\bfseries Computational Statistics Practical Report-5 \\
+	\Large 2025/2026
+	\vspace{-0.4cm}
+}
+
+
+\author{
+	João Pires (ist1116478) and Gustavo Brazil (ist1116490) \\[0.1em]
+	\normalsize Instituto Superior Técnico, University of Lisbon, Portugal\\
+	\vspace{-0.8cm}
+}
+
+\date{January 9th, 2026}
+
+%\vspace{-3cm}
+
+% Alargar o texto do abstract mantendo o título centrado como está
+% Alargar o texto do abstract e reduzir o espaço após a data
+\makeatletter
+\renewenvironment{abstract}{
+	\vspace{-2em} % 🔧 ajusta a distância entre a data e o título "Abstract"
+	\begin{center}
+		{\bfseries \abstractname\vspace{0.06cm}} % título centrado
+	\end{center}
+	\list{}{%
+		\setlength{\leftmargin}{0pt}%
+		\setlength{\rightmargin}{0pt}%
+	}%
+	\item\relax
+}{\endlist\vspace{0.5em}}
+\makeatother
+
+
+
+% Ajustar o ambiente abstract para ter a mesma largura que o texto normal
+%\makeatletter
+%\renewenvironment{abstract}{
+	%	\vspace{1em}
+	%	\noindent\textbf{\abstractname.}\quad
+	%}{\par\vspace{1em}}
+%\makeatother
+
+% =====================================================================
+% DOCUMENT
+% =====================================================================
+
+%\renewcommand{\thesection}{Chapter \arabic{section}}
+\usepackage{tabularx}
+
+% --- Adicionar ao Preâmbulo (antes de \begin{document}) ---
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{caption} % <--- ADICIONAR ESTE PACOTE
+
+% Configuração para tornar o rótulo (ex: "Listing 1") em negrito
+\captionsetup[lstlisting]{labelfont=bf}
+
+% A tua configuração original (mantida igual)
+\lstset{ 
+	language=R,                     % Linguagem R
+	basicstyle=\footnotesize\ttfamily, % Fonte pequena e monoespaçada
+	numbers=left,                   % Números na esquerda
+	numberstyle=\tiny\color{gray},  % Estilo dos números
+	stepnumber=1,                   % Numerar todas as linhas
+	numbersep=5pt,                  % Distância dos números
+	backgroundcolor=\color{white},  % Fundo branco
+	showspaces=false,               % Não mostrar espaços
+	showstringspaces=false,         % Não mostrar espaços em strings
+	showtabs=false,                 % Não mostrar tabs
+	frame=single,                   % Moldura à volta do código
+	rulecolor=\color{black},        % Cor da moldura
+	tabsize=2,                      % Tamanho do tab
+	captionpos=b,                   % Posição da legenda (bottom)
+	breaklines=true,                % Quebrar linhas longas
+	breakatwhitespace=false,        % Quebrar apenas em espaços?
+	title=\lstname,                 % Mostrar o nome do ficheiro (opcional)
+	keywordstyle=\color{blue},      % Keywords em azul
+	commentstyle=\color{teal},      % Comentários em verde escuro
+	stringstyle=\color{violet},     % Strings em roxo
+	escapeinside={\%*}{*)},         % Se quiser adicionar LaTeX dentro do código
+	morekeywords={*,...}            % Adicionar keywords extra se necessário
+}
+
+
+\begin{document}
+	
+	\maketitle
+	\thispagestyle{plain}
+	
+	%\vspace{-1cm}
+	
+	
+	% ================================================================
+	% Modular file structure (each section in its own .tex file)
+	% ================================================================
+	\vspace{-1cm}
+	\input{01_Introducao}
+	\input{02_EDA}
+	\input{03_ModelSpecification}
+	\input{04_ModelSelectionEval}  % uncomment if needed
+	\input{05_Innovation}
+	\input{06_Conclusion}
+	\input{06.5_Bibili}
+	\input{07_APPCode}
+	
+	% ================================================================
+	% REFERENCES
+	% ================================================================
+	\clearpage
+
+	%\renewcommand{\refname}{\vspace*{-0.5cm}\centering\Large \textbf{References}\vspace{0.5cm}}
+	
+	\thispagestyle{empty}
+	
+	\bibliographystyle{unsrt}
+	\bibliography{references}
+	
+\end{document}

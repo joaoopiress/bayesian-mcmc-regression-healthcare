@@ -1,0 +1,23 @@
+\section{Conclusion}
+
+This practical report aimed to identify the physiological determinants of Glycosolated Hemoglobin (GHB) in a sample of African American subjects, employing a Bayesian Gamma Regression framework. The Exploratory Data Analysis and subsequent modeling revealed that Stabilized Glucose (SGLU) is the dominant predictor of GHB levels. The Bayesian analysis estimated that for every unit increase in stabilized glucose, GHB levels rise by approximately 0.4\%, a finding supported by the 95\% Credible Intervals. Age and Waist Circumference were also identified as significant positive predictors, highlighting the compounding impact of aging and metabolic health on diabetes markers.
+
+Contrary to initial expectations, Systolic Blood Pressure (SBP) was not found to be a significant linear predictor of GHB in this multivariate context, a result consistently observed in both the Bayesian posterior intervals and the frequentist Bootstrap validation. This suggests that the uni-variate association of blood pressure with diabetes is likely mediated by other factors such as age or adiposity (multicollinearity), rather than being an independent driver. Additionally, demographic factors such as Gender and Location showed no discriminatory power regarding GHB distribution.
+
+Methodologically, the use of the Gamma distribution proved appropriate for the right-skewed nature of the data. The innovation step, employing a non-parametric Bootstrap, demonstrated a convergence with the Bayesian results. The alignment between the data-driven frequentist approach (AIC selection) and the prior-driven Bayesian approach (DIC selection) strengthens the validity of the final reduced model.
+
+In summary, this study provides a strong statistical model for estimating GHB, emphasizing that glucose management and weight control (waist circumference) are critical factors, significantly outweighing the influence of blood pressure in this specific population.
+
+
+\section{Future Work}
+
+Although the proposed Gamma Regression model demonstrates robust predictive power and consistency across Bayesian and frequentist frameworks, several approaches for future research could further purify the analysis.
+
+First, to assess the goodness-of-fit beyond parameter convergence, Posterior Predictive Checks (PPC) should be implemented. Comparing the observed data density against the posterior predictive distribution would provide a stronger validation of the Gamma assumption, ensuring that the model can accurately replicate the structural features of the observed GHB levels \cite{gelman2013}.
+
+Second, this study relied on complete-case analysis, which reduced the effective sample size by excluding subjects with missing values. Future iterations could incorporate Bayesian Data Imputation directly within the MCMC framework. Treating missing values as latent parameters to be estimated would allow for the utilization of the full dataset (390 subjects), preserving statistical power and mitigating potential selection bias \cite{rubin2019}.
+
+Finally, while variable selection was based on correlation thresholds and model comparison via DIC, employing Bayesian Regularization techniques (such as the Bayesian Lasso or Horseshoe priors) would provide a more automated approach to variable selection. This would be particularly useful for handling predictors with marginal significance, such as Systolic Blood Pressure, by effectively shrinking their coefficients towards zero without the need for manual exclusion \cite{park2008}.
+
+\section*{AI Disclaimer}
+This report utilized Google's Gemini Pro to assist in the coding phase, serving as a starting point for the R and JAGS scripts which were subsequently adapted and expanded by the members of the group. The tool was also used to clarify theoretical concepts, strictly based on the provided course materials and bibliography. All final content has been verified and authored by the members of the group.
